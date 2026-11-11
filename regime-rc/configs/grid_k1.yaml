@@ -1,0 +1,54 @@
+# Reservoir grid RE-RUN AT K = 1.
+#
+# Why this exists: the first grid was run at K = 3, but the K search then
+# selected K = 1, and the two interact. Two specific contaminations:
+#
+#   * gate_temperature is a mathematical NO-OP at K = 1 - softmax over a single
+#     logit is 1.0 whatever the temperature - so the +0.067 the first grid
+#     attributed to tau_g = 1.4 was a K = 3 effect that cannot transfer. It is
+#     omitted here rather than re-searched.
+#   * N_reservoir plausibly interacts with K: at K = 3, N_r = 800 means three
+#     experts each reading 800 features; at K = 1 it is one. The optimal width
+#     need not be the same.
+#
+# So the reservoir choice is re-made at the K that was actually selected.
+
+grid:
+  n_reservoir: [150, 300, 500, 800, 1200]
+  target_pre_activation_std: [0.7, 1.1, 1.5]
+  spectral_radius: [0.7, 0.95]
+  leak_rate: [0.3, 0.9]
+
+defaults:
+  n_reservoir: 300
+  spectral_radius: 0.9
+  leak_rate: 0.3
+  target_pre_activation_std: 0.7
+  gate_temperature: 1.0     # inert at K = 1; carried only for cache identity
+
+fixed:
+  washout: 250
+  bias_scale: 0.0
+  calibration_fraction: 0.6
+  max_iterations: 10
+  tolerance: 0.02
+
+mixture:
+  n_experts: 1              # the value the K search selected
+
+# All regularisers select to zero on the concatenated metric. lambda_balance is
+# inert at K = 1 (the penalty is identically zero for a single expert).
+loss:
+  lambda_cvar: 0.0
+  lambda_balance: 0.0
+  lambda_turn: 0.0
+  lambda_div: 0.0
+
+evaluation:
+  fold_names: [F01, F02, F03, F04, F05, F06, F07, F08]
+  seeds: [0, 1, 2]
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  runs_dir: results/runs/grid

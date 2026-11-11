@@ -1,0 +1,47 @@
+# Rung 5 - exact cardinality on the trained mixture's book.
+#
+# The trained mixture decides WHAT to hold (that is what it was trained on);
+# this rung only enforces HOW MANY. Each rebalance date keeps the K_card assets
+# the blend likes most, renormalises, and runs through the same ledger and the
+# same 5 bp cost function as every other rung. Nothing is retrained.
+#
+# The plan's per-date NSGA-II front (R1) was built, measured and retired: at 10
+# assets the cardinality combinatorics are trivial, and the front's EWMA
+# momentum objective overrode the trained system's own view - a
+# predict-then-optimise step, which is the pattern this project argues against.
+# On identical folds it scored -0.325 / -0.231 against +0.909 / +0.342 for plain
+# cardinality. See src/rrc/optim/cardinality.py and run_front_attribution.py.
+
+arm: cardinality
+
+k_card: 5                   # maximum risky names held (cash exempt)
+
+# The training loss. Rung 5 does not retrain with a new objective - these are
+# the mixture's own settings, carried here so the rung is self-describing.
+# lambda_turn is an explicit turnover penalty in the LOSS; it is distinct from
+# the 5 bp transaction cost, which the ledger always charges and which is never
+# switched off. It remains a fully dynamic knob for turnover experiments.
+#
+# All three were previously set to the plan's Appendix B defaults (cvar 1.0,
+# turn 0.5). Both were subsequently MEASURED on the concatenated metric and
+# select to zero, so carrying the old values here would have run rung 5 at
+# settings the project's own evidence rejects:
+#
+#     lambda_cvar   0.526 / 0.505 / 0.449   at 0 / 1 / 5
+#     lambda_turn   0.526 / 0.403 / 0.412   at 0 / 0.5 / 2.0  (turnover 9.2 -> 1.8)
+#
+# lambda_balance stays at 0.01 for K > 1 arms and is identically zero at K = 1.
+loss:
+  lambda_cvar: 0.0
+  lambda_balance: 0.01
+  lambda_turn: 0.0
+
+# Which folds and seeds rung 5 is backtested on. Kept small first; widen at P9.
+folds: [F01, F02, F03]
+seeds: [0, 1, 2, 3, 4]
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  runs_dir: results/runs/rung5
+  frozen_dir: configs/frozen

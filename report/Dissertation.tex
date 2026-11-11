@@ -1,0 +1,56 @@
+\documentclass[pdftex,10pt,a4paper,oneside]{report}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\graphicspath{{figures/}{Preamble/}}
+\usepackage{lipsum}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{verbatim}
+\usepackage[left=3cm, right=3cm, top=3cm, bottom=3cm]{geometry}
+
+\fancyhf{}
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0.2pt}
+
+% Styles can be Sonny, Lenny, Glenn, Conny, Rejne, Bjarne and Bjornstrup
+\usepackage[Sonny]{fncychap} 
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+
+\include{Preamble/Frontpage}
+\include{Preamble/Abstract}
+%\include{Preamble/Dedication} % Comment out for UG dissertations
+\include{Preamble/Acknowledge}
+\include{Preamble/Declarations}
+%\include{Preamble/Sponsors} % Comment out for UG dissertations
+\include{Preamble/Abbreviations}
+%\include{Preamble/Notations} % Comment out for most dissertations 
+\include{Preamble/Contents}
+\include{Preamble/Lists}
+\include{Preamble/ChapterMods}
+
+\include{Chapter1/Chapter1}
+\include{Chapter2/Chapter2}
+\include{Chapter3/Chapter3}
+\include{Chapter4/Chapter4}
+\include{Chapter5/Chapter5}
+\include{Chapter6/Chapter6}
+\include{Chapter7/Chapter7}
+\include{Chapter8/Chapter8}
+% Chapters 9 and 10 are spare stubs, parked until needed. Re-enable if the
+% report structure grows beyond eight chapters.
+%\include{Chapter9/Chapter9}
+%\include{Chapter10/Chapter10}
+
+\bibliographystyle{unsrt}
+\bibliography{bibliography}
+
+\include{Appendices/Appendices}
+
+\end{document}

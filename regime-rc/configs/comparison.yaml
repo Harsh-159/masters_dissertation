@@ -1,0 +1,76 @@
+# The ladder comparison - every arm, one universe, one protocol, one metric.
+#
+# Scored on the CONCATENATED out-of-sample stream across the fold test years,
+# with a single excess Sharpe computed exactly as the baselines and the
+# literature compute it. Averaging per-year Sharpes is not used as a headline:
+# it rebases wealth each January and weights a calm year equally with a crisis
+# year (on sector11 F01-F03 the two differ by 0.48).
+
+# Baseline settings, identical to configs/baselines.yaml so rung 0 is the same
+# opponent here as it is in its own run. A baseline gets no hyperparameter
+# search; these are fixed and never tuned.
+arms:
+  inverse_vol:
+    window: 63
+    min_observations: 40
+  mean_variance:
+    lookback: 252
+    min_observations: 126
+    risk_aversion: 5.0
+
+# The training loss for the learned arms. EVERY regulariser was measured on the
+# concatenated metric and every one of them selects to zero:
+#
+#     lambda_cvar   0.526 / 0.505 / 0.449   at 0 / 1 / 5
+#     lambda_turn   0.526 / 0.403 / 0.412   at 0 / 0.5 / 2.0
+#     lambda_div    0.547 / 0.526 / 0.443   at 0 / 0.01 / 0.05
+#
+# lambda_div previously sat at 0.01 here, with a comment claiming it was the
+# measured best. It is not - 0.0 beats it by 0.021 - and forcing the experts
+# apart makes the mixture monotonically worse (pairwise correlation falls
+# 0.691 -> 0.400 and Sharpe falls with it, 0.547 -> 0.382). Corrected.
+#
+# This is one coherent finding rather than five: the train/validation gap is
+# non-stationarity, not fixable overfitting, so no penalty computed on the
+# training window can close it.
+#
+# lambda_balance stays at 0.01 - it is the anti-collapse pressure for the K > 1
+# arms and is identically zero when K = 1.
+loss:
+  lambda_cvar: 0.0
+  lambda_balance: 0.01
+  lambda_turn: 0.0
+  lambda_div: 0.0
+
+# The LSTM comparison arm - a TRAINED temporal encoder replacing the frozen
+# reservoir, to test decision D2. Deliberately small: a fold holds only a few
+# hundred weekly decisions, and an oversized network would lose for the wrong
+# reason. Expected to lose; that expectation is recorded in
+# src/rrc/models/recurrent.py before the run, which is what makes either
+# outcome honest.
+lstm:
+  hidden_size: 32
+  lookback: 60              # one quarter of trailing days per decision
+  learning_rate: 0.003
+  max_epochs: 150           # fewer than the heads: each epoch is far costlier
+  patience: 15
+
+# The statistical gates (rung 4). Reused verbatim from configs/rung3.yaml so the
+# HMM and VIX arms in a walk-forward run are the SAME opponents gate G3 faced -
+# R6's equal-conditions requirement applies to the baselines' settings too, not
+# just to the training loop.
+mixture:
+  n_experts: 3
+  gate_temperature: 1.0
+  gate_noise_initial: 0.3
+
+hmm:
+  n_states: 3                 # matched to the learned system's K
+  random_state: 0
+  n_iter: 200
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  raw_dir: data/raw           # the VIX gate reads the cached FRED VIXCLS series
+  runs_dir: results/runs/comparison

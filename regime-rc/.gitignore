@@ -1,0 +1,180 @@
+# Virtual environment
+.venv/
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# macOS
+.DS_Store
+
+# Data caches: large, and fully regenerable from the recorded sources (P1).
+# Leading slash anchors this to the repository root. Without it the pattern
+# would also match `src/rrc/data/`, silently untracking the data *package*.
+/data/
+
+# Per-run artifacts and figures are regenerable (`make figures`), so they are
+# not versioned - but the directories are kept so a fresh clone has the layout.
+results/runs/*
+!results/runs/.gitkeep
+results/figures/*
+!results/figures/.gitkeep
+
+# NOTE: results/registry.csv is deliberately NOT ignored.
+# It is the append-only audit trail that every claim in the dissertation traces
+# back to, and the source of the deflated-Sharpe trial count. It must be
+# versioned alongside the code that produced it.
+
+# Exploratory diagnostics: regenerable with `make diagnostics`, and not
+# results of record, so the images themselves are not versioned.
+results/diagnostics/*
+!results/diagnostics/.gitkeep
+
+# ---------------------------------------------------------------------------
+# P2 (backtest engine) — parked, commented out.
+# Uncomment individual lines to stop tracking a file, then run:
+#     git rm --cached <path>
+# (.gitignore alone does not untrack a file that is already committed.)
+#
+# src/rrc/backtest/ledger.py
+# src/rrc/backtest/costs.py
+# src/rrc/backtest/metrics.py
+# tests/test_ledger.py
+# tests/test_metrics.py
+# scripts/run_smoke_backtest.py
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# P3 (reservoir) — parked, commented out.
+# Same rules as the P2 block above: uncomment a line to stop tracking it, then
+#     git rm --cached <path>
+#
+# src/rrc/reservoir/scr.py
+# src/rrc/reservoir/esn.py
+# src/rrc/reservoir/cache.py
+# src/rrc/reservoir/diagnostics.py
+# tests/test_reservoir.py
+# scripts/run_reservoir.py
+# configs/reservoir.yaml
+#
+# Note: the cached state files (data/states/*.npz, ~25 MB) are already excluded
+# by the /data/ rule above — they are regenerable with `python scripts/run_reservoir.py`.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# P4 (rung-0 baselines) — parked, commented out.
+# Same rules as the blocks above: uncomment a line to stop tracking it, then
+#     git rm --cached <path>
+#
+# src/rrc/eval/slicing.py
+# src/rrc/eval/stats.py
+# src/rrc/baselines/naive.py
+# src/rrc/baselines/markowitz.py
+# tests/test_slicing.py
+# tests/test_stats.py
+# tests/test_baselines.py
+# scripts/run_baselines.py
+# configs/baselines.yaml
+#
+# Note: the P4 outputs are already handled — results/runs/rung0/* falls under
+# the existing results/runs/* rule (regenerable with `make baselines`), the
+# rung0 equity PNGs under results/figures/*, and results/registry.csv stays
+# deliberately TRACKED (append-only audit trail; the 224 rung-0 rows are the
+# first entries of record).
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# P5 (rung 1 - single decision-trained head, gate G1) — parked, commented out.
+# Same rules as the blocks above: uncomment a line to stop tracking it, then
+#     git rm --cached <path>
+#
+# src/rrc/models/experts.py
+# src/rrc/models/losses.py
+# src/rrc/optim/fold_data.py
+# src/rrc/optim/train_loop.py
+# src/rrc/optim/toy.py
+# src/rrc/eval/causality.py
+# tests/test_rung1.py
+# scripts/run_rung1.py
+# configs/rung1.yaml
+#
+# Note: the P5 outputs are already handled — results/runs/rung1/* (loss curves,
+# g1_report.json) falls under the existing results/runs/* rule and is
+# regenerable with `make rung1`; results/registry.csv stays deliberately
+# TRACKED (the rung-1 rows and the DSR trial count of 14 are part of the
+# append-only audit trail). The git tag `g1-pass` lives in git itself, not in
+# any file.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# P6 (rung 2 - mixture of experts, gate G2) — parked, commented out.
+# Same rules as the blocks above: uncomment a line to stop tracking it, then
+#     git rm --cached <path>
+#
+# src/rrc/models/gating.py
+# tests/test_rung2.py
+# scripts/run_rung2.py
+# configs/rung2.yaml
+#
+# Note: the P6 outputs are already handled — results/runs/rung2/* (training
+# histories, expert-weight npz, occupancy parquet, g2_report.json) falls under
+# the existing results/runs/* rule and is regenerable with `make rung2`; the F6
+# occupancy and F7 expert PNGs under results/figures/*; results/registry.csv
+# stays deliberately TRACKED (the rung-2 rows are part of the append-only audit
+# trail). The git tag `g2-pass` lives in git itself, not in any file.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# P7 (thesis week - rungs 3a/3b/3c + 4, gate G3) — parked, commented out.
+# Same rules as the blocks above: uncomment a line to stop tracking it, then
+#     git rm --cached <path>
+#
+# src/rrc/baselines/hmm_gate.py
+# src/rrc/baselines/vix_gate.py
+# src/rrc/eval/agreement.py
+# tests/test_rung3.py
+# scripts/run_rung3.py
+# configs/rung3.yaml
+#
+# Note: rungs 3/4 also EXTENDED files first added in earlier phases —
+# src/rrc/models/gating.py (SignalRoutedMixture, FixedRoutingMixture,
+# route_pack) is parked in the P6 block, and src/rrc/optim/fold_data.py
+# (SegmentPack's signals + fixed_memberships) in the P5 block; they are not
+# repeated here. The P7 outputs are already handled — results/runs/rung3/*
+# (headline_*.csv, g3_report.json) falls under the existing results/runs/* rule
+# and is regenerable with `make rung3`; the F8 agreement PNGs under
+# results/figures/*; results/registry.csv stays deliberately TRACKED (the
+# rung-3a/3b/3c and rung-4 rows are part of the append-only audit trail). The
+# git tag `g3-pass` lives in git itself, not in any file.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# P8 (rung 5 per-date front + outer hyperparameter search + config freeze)
+# — parked, commented out. Same rules as the blocks above: uncomment a line to
+# stop tracking it, then
+#     git rm --cached <path>
+#
+# src/rrc/optim/nsga_front.py
+# src/rrc/optim/nsga_hyper.py
+# tests/test_nsga_front.py
+# tests/test_turnover_loss.py
+# scripts/run_rung5.py
+# scripts/run_hyper_search.py
+# configs/rung5.yaml
+# configs/hyper.yaml
+#
+# Note: P8 also EXTENDED files first added in earlier phases -
+# src/rrc/models/losses.py and src/rrc/optim/train_loop.py gained the dynamic
+# lambda_turn penalty; they are parked in the P5 block. The P8 outputs are
+# already handled — results/runs/hyper/* and results/runs/rung5/* fall under the
+# existing results/runs/* rule (regenerable with `make hyper` / `make rung5`);
+# the frozen configs live under configs/frozen/ (tracked deliberately, so the
+# frozen point that the DSR is judged against is versioned); results/registry.csv
+# stays TRACKED (the hyper-search and rung-5 rows are part of the append-only
+# audit trail). The git tag `config-freeze` lives in git itself.
+# ---------------------------------------------------------------------------

@@ -1,0 +1,71 @@
+# Coarse-to-fine grid over the reservoir hyperparameters.
+#
+# Budget follows the measured response surface from the 50-draw random search
+# (quartile spread of validation Sharpe, against a seed noise of ~0.03-0.08):
+#
+#   N_reservoir        0.186 -> 0.281   the only clear effect, about 2x noise
+#   input target_std   0.197 -> 0.255   marginal, higher is better
+#   spectral radius    spread 0.051     flat within its admissible range
+#   gate temperature   spread 0.020     flat
+#   leak rate          spread 0.020     flat
+#
+# So: MANY levels of N_r, FEW of target_std, FEWEST of the flat three - and the
+# flat three are checked one-at-a-time at the winner rather than dropped, so
+# "they do not interact" is verified instead of assumed.
+
+grid:
+  # Many levels, and deliberately extending past 500: every good candidate in
+  # the random search sat against that ceiling, which is the signature of a
+  # truncated search box rather than a real optimum.
+  n_reservoir: [150, 300, 500, 800, 1200]
+
+  # Few levels. The random search preferred higher values across the 0.3-1.5
+  # range, so this brackets the default (0.7) and the upper end.
+  target_pre_activation_std: [0.7, 1.1, 1.5]
+
+  # Fewest levels: two apiece, scored only at the stage-1 winner. These bracket
+  # the default without spending a full factorial on dimensions measured flat.
+  spectral_radius: [0.7, 0.95]
+  leak_rate: [0.3, 0.9]
+  gate_temperature: [0.7, 1.4]
+
+# The point every stage varies FROM. These are the plan's Appendix B defaults,
+# which the verification run showed the random-search winner did not beat.
+defaults:
+  n_reservoir: 300
+  spectral_radius: 0.9
+  leak_rate: 0.3
+  target_pre_activation_std: 0.7
+  gate_temperature: 1.0
+
+# Fixed across every candidate; conventions, not free parameters.
+fixed:
+  washout: 250
+  bias_scale: 0.0
+  calibration_fraction: 0.6
+  max_iterations: 10
+  tolerance: 0.02
+
+mixture:
+  n_experts: 3
+
+# The loss knobs, re-selected on the concatenated metric (folds F01-F10). Every
+# regularisation term tested - CVaR, turnover, divergence, weight decay and a
+# drawdown penalty - failed to improve validation, so the plain objective wins.
+loss:
+  lambda_cvar: 0.0
+  lambda_balance: 0.01
+  lambda_turn: 0.0
+  lambda_div: 0.0
+
+evaluation:
+  # Validation years 2006-2013: spans the crisis AND the recovery, so the choice
+  # is not tuned to 2008 alone. Two seeds because a single-seed search was
+  # already shown to manufacture a false winner (0.817 -> 0.298 on re-seeding).
+  fold_names: [F01, F02, F03, F04, F05, F06, F07, F08]
+  seeds: [0, 1]
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  runs_dir: results/runs/grid

@@ -1,0 +1,46 @@
+# Search over the two STRUCTURAL knobs: K (experts) and K_card (names held).
+#
+# K was frozen at 3 by gate G2 for arm comparability and never searched. Two
+# later measurements argue that was premature on sector11: G2's own verdict
+# there was a negative finding (experts near-identical, pairwise correlation
+# 0.923), and the ladder comparison had the mixture LOSING to the single head
+# (0.135 vs 0.231). If K = 3 is wrong, every mixture result on this universe is
+# being read at the wrong capacity.
+#
+# K_card is the whole of rung 5 now that the NSGA front was retired. The plan
+# lists {3, 5, 7}; only 5 was ever run.
+
+# K_card costs nothing extra: it re-repairs an already-trained blend, so one
+# training serves every value. 0 is the sentinel for "unconstrained" - the raw
+# blend, which is the reference point cardinality is measured against.
+k_cards: [0, 3, 5, 7, 9]
+
+# Three rounds of successive REPLICATION, not refinement. K is integer and
+# already dense over 1..6, so there is nothing between 3 and 4 to resolve; what
+# later rounds can buy is more seeds, because the seed spread (0.02-0.14) is the
+# thing standing between candidates.
+rounds:
+  screen:
+    k_values: [1, 2, 3, 4, 5, 6]
+    seeds: [0, 1]
+    fold_names: [F01, F02, F03, F04, F05, F06, F07, F08]
+  replicate:
+    seeds: [0, 1, 2, 3, 4]
+    fold_names: [F01, F02, F03, F04, F05, F06, F07, F08]
+  confirm:
+    seeds: [0, 1, 2, 3, 4]
+    fold_names: [F01, F02, F03, F04, F05, F06, F07, F08, F09, F10, F11, F12]
+
+# The loss knobs, re-selected on the concatenated metric. Every regularisation
+# term tested - CVaR, turnover, divergence, weight decay, drawdown - failed to
+# improve validation, so the plain objective stands.
+loss:
+  lambda_cvar: 0.0
+  lambda_balance: 0.01
+  lambda_turn: 0.0
+  lambda_div: 0.0
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  runs_dir: results/runs/search

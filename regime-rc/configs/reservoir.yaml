@@ -1,0 +1,60 @@
+# Reservoir configuration.
+#
+# These are the defaults from the plan's Appendix B. The outer NSGA-II
+# hyperparameter search (P8) explores the stated ranges; until then everything
+# runs at these values, and any change to them produces a different cfg_hash and
+# therefore a different state-cache file - stale states can never be picked up
+# silently.
+
+reservoir:
+  n_reservoir: 300          # N_r. Range searched later: 100-500.
+  spectral_radius: 0.9      # rho. Exact by construction for the SCR. Range: 0.5-0.999.
+  leak_rate: 0.3            # alpha. Smaller = longer memory. Range: 0.05-1.0.
+  bias_scale: 0.0           # inputs are already standardised and centred
+  washout: 250              # trading days discarded so x_0 = 0 stops mattering
+
+input_scaling:
+  # The input scale v is NOT set by hand. It is calibrated so that the standard
+  # deviation of the pre-tanh activations hits the target below, which places
+  # the activations in the curved part of tanh: raw log returns (~0.01) would
+  # leave the reservoir linear, and over-scaling would saturate it.
+  target_pre_activation_std: 0.7   # accepted range in the search: 0.3-1.5
+  tolerance: 0.02
+  max_iterations: 10
+  # Calibrate on the training portion only, never the whole sample: the input
+  # scale is a fitted quantity and must not see the test period.
+  calibration_fraction: 0.6
+
+esn:
+  # The random reservoir exists only as a robustness check on the SCR choice.
+  density: 0.1
+  seeds: [0, 1, 2]
+
+diagnostics:
+  # Memory capacity is a RESERVOIR-HEALTH check on synthetic i.i.d. input.
+  # It is independent of finance and must never be read as a strategy result.
+  memory_capacity:
+    max_delay: 150
+    n_train: 3000
+    n_test: 2000
+    seed: 0
+    # The MC probe drives the reservoir with a DELIBERATELY SMALL input scale,
+    # unrelated to the operating scale calibrated above. Memory capacity measures
+    # how much of a past input a LINEAR readout can recover; driving the
+    # reservoir hard puts it in the nonlinear regime, where it trades memory for
+    # computational richness and the measurement stops answering the question it
+    # was designed for. Probing near-linear is the standard convention.
+    probe_input_scale: 0.05
+    # A second curve at leak = 1.0 (no leaky integration) is drawn for reference.
+    # Leaky integration low-passes the state, which is desirable on noisy
+    # financial data but costs raw linear memory; showing both makes that
+    # trade-off explicit rather than leaving the operating curve looking weak.
+    reference_leak_rate: 1.0
+  # Spectral radii swept for figure F2 (memory capacity vs rho).
+  spectral_radius_sweep: [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99]
+  pca_components: 50
+  canonical_components: 10
+
+paths:
+  processed_dir: data/processed
+  state_cache_dir: data/states

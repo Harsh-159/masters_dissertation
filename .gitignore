@@ -1,0 +1,18 @@
+# Virtual environments
+.venv/
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+*.log.*
+
+# Raw per-ticker price cache: large and fully regenerable from yfinance
+# (the processed panels, reports, and plots are deliverables - keep them tracked).
+data/raw/

@@ -1,0 +1,20 @@
+# Scaffold smoke-test configuration.
+#
+# This file exists so that the config -> cfg_hash path is exercised end to end
+# on a real YAML file from P0 onwards, rather than only on dicts built inside
+# tests. It is not an experiment: the real experiment configs arrive with the
+# data layer (P1) and the training loop (P5).
+#
+# Convention: one YAML per experiment; sha256 of its canonical JSON is the
+# cfg_hash recorded in every registry row the experiment produces.
+
+experiment:
+  name: smoke
+  rung: "0"
+  arm: scaffold
+
+data:
+  universe: etf10
+
+run:
+  seed: 0

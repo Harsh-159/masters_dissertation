@@ -1,0 +1,87 @@
+# FROZEN CONFIGURATION - sector11
+#
+# THIS FILE IS THE SINGLE SOURCE OF TRUTH for what sector11 results are produced
+# at. If a number in the dissertation disagrees with this file, this file wins
+# and the number is stale.
+#
+# ---------------------------------------------------------------------------
+# WHY THE RESERVOIR IS AT THE PLAN'S DEFAULTS, AND NOT AT A SEARCH WINNER
+# ---------------------------------------------------------------------------
+# Three searches proposed a better reservoir for this universe. Each winner was
+# re-scored on folds F13-F18, which no search ever touched. None transferred:
+#
+#     selection                    on validation   on untouched folds
+#     first random search             0.817        0.298 across seeds
+#     first grid (run at K = 3)       won          died on the move to K = 1
+#     K = 1 reservoir grid            0.603        0.526  (worst of three)
+#     joint K x rho grid              0.582        0.428  (worst of three)
+#
+# The decisive measurement: out of sample the spread ACROSS reservoir
+# configurations (0.064) is SMALLER than the seed spread WITHIN one (0.085).
+# Which settings are chosen matters less than which random seed is drawn.
+#
+# So the frozen values are Appendix B's defaults - the only configuration
+# selected without looking at any data, and therefore the only one carrying no
+# selection bias. Adopting the held-out leader instead would have spent F13-F18
+# as a selection set and left nothing clean to verify against.
+#
+# An earlier version of this file held the random-search winner (N_r 479,
+# rho 0.72, alpha 0.96), and a later one the grid winner (rho 0.95). Both were
+# validation-selected and neither survived verification. Corrected.
+#
+# Regenerate the evidence with:
+#     scripts/run_verify_frozen.py --universe sector11 --seeds 0,1,2,3,4
+#     scripts/run_joint_search.py  --universe sector11
+
+universe: sector11
+
+reservoir:
+  n_reservoir: 300
+  spectral_radius: 0.90
+  leak_rate: 0.30
+  bias_scale: 0.0
+  washout: 250
+
+input_scaling:
+  target_pre_activation_std: 0.70
+  calibration_fraction: 0.6
+  max_iterations: 10
+  tolerance: 0.02
+
+# Inert at K = 1 - a softmax over a single logit is 1.0 at any temperature - and
+# recorded only so the cache identity is complete. It becomes live again if K
+# ever moves above 1 here, at which point it must be re-searched, not inherited.
+gate_temperature: 1.0
+
+model:
+  # K = 1 is SELECTED on this universe, not a default. It won all three rounds
+  # of the K search (0.611 / 0.580 / 0.670 against K = 3's 0.541 / 0.545 /
+  # 0.639), and train Sharpe does not improve with K - the extra experts buy no
+  # fitting power, only variance. Confirmed three ways: the mechanism works on
+  # etf10 where experts do specialise; forcing specialisation with lambda_div
+  # makes it monotonically worse; removing gate noise changes it by 0.001.
+  n_experts: 1
+  k_card: 0            # unconstrained; cardinality costs ~0.08 Sharpe at K_card=5
+
+# Every regulariser selects to zero on the concatenated metric. This is one
+# coherent finding rather than five: the train/validation gap is
+# non-stationarity, not fixable overfitting, so no penalty computed on the
+# training window can close it. weight_decay is the cleanest proof - it shrinks
+# the gap from 0.84 to -0.11 and makes validation WORSE.
+loss:
+  lambda_cvar: 0.0       # 0.526 / 0.505 / 0.449 at 0 / 1 / 5
+  lambda_balance: 0.0    # identically zero at K = 1 in any case
+  lambda_turn: 0.0       # 0.526 / 0.403 / 0.412 at 0 / 0.5 / 2.0
+  lambda_div: 0.0        # 0.547 / 0.526 / 0.443 at 0 / 0.01 / 0.05
+  weight_decay: 0.0
+
+reservoir_cfg_hash: c6c9f361a18c018a95cb993c99d919794aa7868de9bd6cb1d352c75a6e0a3fff
+selected_by: >
+  pre-specified (Implementation Plan v1.0, Appendix B). Retained after three
+  searches failed held-out verification on folds F13-F18.
+evidence:
+  - results/runs/verify/verify_frozen_sector11.csv
+  - results/runs/joint/joint_selection_sector11.csv
+  - results/runs/joint/joint_heldout_sector11.csv
+  - results/runs/grid/grid_sector11.csv
+  - SEARCH_FINDINGS.md

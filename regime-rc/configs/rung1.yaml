@@ -1,0 +1,43 @@
+# Rung 1 - the single decision-trained head (phase P5, gate G1).
+#
+# One linear head on the frozen SCR states, K = 1, no gating, no sentiment.
+# The question this rung answers: does decision-focused training on a reservoir
+# add value AT ALL? Everything later composes around this mechanism.
+
+arm: single_head
+
+train:
+  learning_rate: 0.003        # Adam, heads only (R3)
+  max_epochs: 500
+  patience: 25                # early stopping on validation excess Sharpe
+  gradient_clip_norm: 5.0
+
+loss:
+  # The tail-term weight is the ONE loss knob explored at rung 1 (Table 3):
+  # tried on validation here, then frozen for every later rung at the P8
+  # config-freeze. Each value is a distinct configuration in the registry, so
+  # each inflates the deflated-Sharpe trial count - as it should.
+  lambda_cvar_grid: [0.0, 1.0, 5.0]
+  lambda_balance: 0.0         # anti-collapse term is meaningless for K = 1
+
+seeds: [0, 1, 2, 3, 4]        # head-initialisation seeds; mean +/- sd reported
+
+folds: [F01]                  # P5 proves the mechanism on the first fold;
+                              # the full fold matrix is P9's job
+
+c2:
+  # The shuffle-future leak test runs on one trained head per universe.
+  n_permutations: 10
+  noise_band: 0.6             # |mean permuted Sharpe| must sit inside this
+  seed_head: 0                # which trained head to test
+  lambda_cvar: 1.0            # ...and under which loss configuration
+
+toy:
+  overfit_epochs: 400
+  overfit_sharpe_threshold: 5.0
+  finite_difference_tolerance: 1.0e-5
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  runs_dir: results/runs/rung1

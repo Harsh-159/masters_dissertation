@@ -1,0 +1,38 @@
+# Decision-Focused Regime-Gated Reservoir Computing for Multi-Objective
+# Portfolio Construction — MSc dissertation, University of Birmingham.
+#
+# Every dependency across the three projects in this repository, pinned to the
+# versions the results were produced with. Python 3.14.3.
+#
+#     python -m venv .venv
+#     ./.venv/bin/pip install -r requirements.txt
+#
+# Each project also carries its own environment (portfolio-data/.venv,
+# portfolio-forecast/.venv, regime-rc/.venv) and those are what the reported
+# results were actually run in. This file is the union, for anyone who wants a
+# single environment that can run all three. Where the sub-projects disagreed on
+# a version, the regime-rc pin wins, since that is the project the dissertation
+# rests on.
+
+# ── core numerics and storage, used by all three ──────────────────────────────
+numpy==2.5.1
+pandas==3.0.3
+pyarrow==25.0.0            # parquet engine for every cached panel and state
+scipy==1.18.0
+matplotlib==3.11.1
+PyYAML==6.0.3              # experiment and pipeline configs
+
+# ── data sources ──────────────────────────────────────────────────────────────
+yfinance==1.5.1            # daily prices
+pandas-datareader==0.11.1  # Stooq price fallback (regime-rc)
+openpyxl==3.1.5            # reads the SF Fed news-sentiment .xlsx (regime-rc)
+
+# ── models ────────────────────────────────────────────────────────────────────
+torch==2.13.0              # CPU only. the ledger and every head; no GPU needed
+scikit-learn==1.9.0        # Ledoit-Wolf covariance, and xgboost's sklearn API
+hmmlearn==0.3.3            # the statistical-gate baseline (rung 4)
+statsmodels==0.14.6        # HAC/Newey-West kernel for the Ledoit-Wolf Sharpe test
+xgboost==3.3.0             # the portfolio-forecast baseline only
+
+# ── tests ─────────────────────────────────────────────────────────────────────
+pytest==9.1.1

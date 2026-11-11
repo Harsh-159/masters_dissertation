@@ -1,0 +1,90 @@
+# FROZEN CONFIGURATION - etf10
+#
+# THIS FILE IS THE SINGLE SOURCE OF TRUTH for what etf10 results are produced
+# at. If a number in the dissertation disagrees with this file, this file wins
+# and the number is stale.
+#
+# ---------------------------------------------------------------------------
+# WHY THE RESERVOIR IS AT THE PLAN'S DEFAULTS
+# ---------------------------------------------------------------------------
+# Two searches proposed a better reservoir here. Each was re-scored on folds
+# F06-F10, which no etf10 search has ever touched (the only registered search,
+# the 50-draw random search, used F01-F05). Neither transferred:
+#
+#     configuration                  selection folds   held-out F06-F10
+#     random-search winner                0.438             0.929
+#     joint K x rho (K=2, rho=0.99)       0.464             0.783
+#     plan defaults                       0.474             0.809
+#
+# Read these carefully - etf10 differs from sector11 and the difference matters:
+#
+#   * the random-search winner comes out +0.118 AHEAD held out, but the seed
+#     spread is 0.150, so it is inside noise. This is "no evidence it
+#     transfers", NOT "evidence it fails" as it was on sector11, where the
+#     winners came out worst. Do not flatten the two universes together.
+#   * the joint-search winner does not transfer (-0.027 against defaults).
+#   * the random-search winner is worse on the very folds it was selected on
+#     (0.438 vs 0.474), because it was originally scored under a different
+#     training budget (200 epochs / patience 15) and before the gate-noise
+#     anneal fix. Its recorded val_sharpe of 1.0616 is NOT comparable to any
+#     current number and should not be quoted.
+#
+# The previous contents of this file were that unverified random-search winner
+# (N_r 415, rho 0.8257, alpha 0.3102, std 1.1432, tau_g 1.9157). It had no K, no
+# loss block, and had never been checked on a fold it was not selected on.
+#
+# Regenerate the evidence with:
+#     scripts/run_verify_frozen.py --universe etf10 --seeds 0,1,2,3,4
+#     scripts/run_joint_search.py  --universe etf10
+
+universe: etf10
+
+reservoir:
+  n_reservoir: 300
+  spectral_radius: 0.90
+  leak_rate: 0.30
+  bias_scale: 0.0
+  washout: 250
+
+input_scaling:
+  target_pre_activation_std: 0.70
+  calibration_fraction: 0.6
+  max_iterations: 10
+  tolerance: 0.02
+
+# Live here, unlike on sector11, because K > 1. Left at the plan default: the
+# joint grid found it flat and no search result on this universe transferred.
+gate_temperature: 1.0
+
+model:
+  # K = 3 is the plan's Appendix B DEFAULT, not a selection. No K selection was
+  # ever made on etf10: the cross-universe diagnostic had every K tied
+  # (K=1 1.062, K=2 1.044, K=3 1.064, K=5 1.066 against seed spreads of
+  # 0.03-0.13), and the joint grid's nominal preference for K = 2 did not
+  # transfer to held-out folds. Three different K values have now led at
+  # different times, all inside seed noise - which is itself the finding.
+  #
+  # Note what this means for the ladder: etf10 is the universe where the experts
+  # DO differentiate (pairwise correlation 0.169 at K = 2, 0.379 at K = 3, versus
+  # sector11's 0.63-0.84). They differentiate, and it still does not pay.
+  n_experts: 3
+  k_card: 0            # unconstrained
+
+# Same evidence as sector11: every regulariser selects to zero on the
+# concatenated metric. lambda_balance stays live here because K > 1.
+loss:
+  lambda_cvar: 0.0
+  lambda_balance: 0.01   # the anti-collapse pressure; only meaningful at K > 1
+  lambda_turn: 0.0
+  lambda_div: 0.0
+  weight_decay: 0.0
+
+reservoir_cfg_hash: a06a8f7a0aead4dbe253e03a3fbaee07b5a7b248ebe121645b356b4a29647581
+selected_by: >
+  pre-specified (Implementation Plan v1.0, Appendix B). Retained after two
+  searches failed held-out verification on folds F06-F10.
+evidence:
+  - results/runs/verify/verify_frozen_etf10.csv
+  - results/runs/joint/joint_selection_etf10.csv
+  - results/runs/joint/joint_heldout_etf10.csv
+  - SEARCH_FINDINGS.md

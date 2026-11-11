@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rrc"
+version = "0.1.0"
+description = "Decision-focused regime-gated reservoir computing for multi-objective portfolio construction"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Harsh" }]
+
+# Versions are pinned exactly, not bounded. A dissertation result must be
+# reproducible from this file alone; a floating upper bound means a future
+# `pip install` silently reproduces a different experiment.
+dependencies = [
+    "numpy==2.5.1",
+    "pandas==3.0.3",
+    "pyarrow==25.0.0",          # parquet engine for the cached panels and states
+    "torch==2.13.0",            # CPU is sufficient; see README on why no GPU is needed
+    "hmmlearn==0.3.3",          # statistical-gating baseline (fitted on train only, filtered forward)
+    "scikit-learn==1.9.0",      # Ledoit-Wolf covariance for the rung-0 Markowitz baseline
+    "scipy==1.18.0",
+    "statsmodels==0.14.6",      # HAC/Newey-West kernel for the Ledoit-Wolf Sharpe test
+    "yfinance==1.5.1",          # price source
+    "pandas-datareader==0.11.1",# Stooq price fallback
+    "openpyxl==3.1.5",          # reads the SF Fed news-sentiment .xlsx
+    "matplotlib==3.11.1",
+    "PyYAML==6.0.3",            # experiment configs
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# `src` on the path means the suite runs against the working tree without
+# requiring a reinstall after every edit.
+pythonpath = ["src"]
+addopts = "-q"

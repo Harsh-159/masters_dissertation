@@ -1,0 +1,83 @@
+% !TEX root =  ../Dissertation.tex
+
+\chapter{Discussion and Limitations}
+\label{ch:discussion}
+
+\section{Why the carving differs}
+\label{sec:disc-carving}
+
+The $\eta^2$ analysis of Section~\ref{sec:results-interpretation} says ours vs statistical gate are measuring different quantities. The statistical gates partition the sample on risk, our gate biggest found focus is recent direction, and each explains almost nothing of the other's variable. Once that is seen, the rest of the RQ1 evidence follows. Two labellings driven by nearly unrelated variables must agree at chance, which is the AMI $\approx 0$ of Figure~\ref{fig:agreement}. And the dwell times follow the variable each gate watches: volatility persists for months, so the HMM holds a state for $12.9$ weeks, while five-day direction flips constantly, so our gate holds one only for $1.8$ (Figure~\ref{fig:ribbons}).
+
+In simple terms our gate's three states have mean five-day returns of $+0.34\sigma$, $+0.02\sigma$ and $-0.55\sigma$ on \texttt{sector11}, with every other variable inside $0.15\sigma$, so they can be read as ``just rose'', ``drifted'' and ``just fell'' (note that this is not the full picture since even 5 day direction's value in Fig \ref{fig:eta2} is not that large) . The HMM's states read more like calm, stressed and crisis, with mean realised volatility $-0.40\sigma$, $+0.96\sigma$ and $+1.62\sigma$ and mean direction below $0.1\sigma$ in every state: it cannot tell you which way the market went, and our gate cannot tell you how rough the ride was.
+
+There is a structural reason our gate could not have produced the HMM's partition. With zero bias and $x_0 = 0$ (Table~\ref{tab:hyper}), the reservoir state is an \emph{odd} functional of the driving returns i.e. flip the sign of every input and every state flips sign,
+\begin{equation}
+  x_t(-u) \;=\; (1-\alpha)\,x_{t-1}(-u)
+  + \alpha\tanh\!\big(W x_{t-1}(-u) - v\,W_{\text{in}} u_t\big)
+  \;=\; -\,x_t(u),
+  \label{eq:odd-state}
+\end{equation}
+because $\tanh$ is odd and every other operation in Eq.~\ref{eq:reservoir} is linear. Now direction is an odd function of returns, while any volatility measure is even, meaning it remains unchanged when every return flips sign. A volatility partition must therefore give $u$ and $-u$ the same label. Consider the following case:
+
+The regime label at week $t$ is the expert with the largest $\operatorname{argmax}_k\,(W_g x_t + b_g)_k$ (Eq.~\ref{eq:gate}). Under the flip of Eq.~\ref{eq:odd-state} the bias is unchanged while the state term reverses, so the mirrored week is scored with $b_g - W_g x_t$. Take $K = 3$ \& zero bias
+\begin{equation}
+  \underbrace{(+2,\,-1,\,-1)}_{\text{Week A }}
+  \qquad\longrightarrow\qquad
+  \underbrace{(-2,\,+1,\,+1)}_{\text{Week B }}.
+  \label{eq:flip-example}
+\end{equation}
+The two weeks have identical volatility, yet the gate labels them differently, so this labelling is not a volatility partition. Thus because of the odd like (because of the bias term, if it is 0 then its odd nature) nature of both reservoir and our gate we can't account for volatility. The HMM faced no such constraint because it was handed trailing realised volatility as an observable (Section~\ref{sec:baselines}) thus its risk partition was half-built before fitting began.
+
+When the five market-level signals are appended to the gate's input, the even-function barrier is gone: VIX arrives as an ordinary linear feature. The gate does read the new inputs, but we see that what it actually absorbs is the short rate, while realised volatility stays at the floor and direction stays first (Figure~\ref{fig:eta2}). So the architecture could not build a risk detector from the state, and, offered risk directly, the decision objective still declined to become one. 
+
+\section{Why it does not pay}
+\label{sec:disc-null}
+
+The obtained performance null was not just one failed experiment, rather it is the same answer arriving from different directions. The universe is not the bottleneck: the natural reading of 2008 on \texttt{sector11}, that an all-equity universe simply offers no defensive action, predicts the models should do better on \texttt{etf10}, which holds Treasuries and gold, and instead they lose there by more, ending with roughly half of SPY's terminal wealth (Section~\ref{sec:results-ladder}). Capacity is not the bottleneck: train Sharpe is flat in the number of experts ($0.482$, $0.476$, $0.462$ at $K=1,3,6$) while the train validation gap widens, so the added parameters buy variance rather than fit, and even the test selected best capacity only lands on top of the best baseline ($0.513 \pm 0.025$ against $0.511$, Table~\ref{tab:ladder}). Information is not the bottleneck: the signal added single head ties a baseline at six times the turnover, and handing the signal vector to the gate at those same best-capacity configurations moves test Sharpe by $-0.023$ (paired seed sd $0.026$) on \texttt{sector11} and $-0.207$ (sd $0.140$) on \texttt{etf10} .A gate that will not reorganise onto risk cannot profit from a risk signal, and the extra inputs only give it more to overfit. The encoder is not the bottleneck: the LSTM's search buys validation Sharpe of $1.011$ and $1.068$ that becomes $0.237$ and $0.254$ on test, below the small pre-specified network. And the gap is not fixable overfitting: all five penalties select to zero (Table~\ref{tab:penalty}).
+
+Weight decay is the observation that tackles overfitting. If overfitting was the culprit then, shrinking of weights should likely close the train-validation gap \emph{and} raise validation. Weight decay closes the gap completely, from $0.84$ to $-0.11$, still validation gets worse. The gap is therefore likely not the model over-learning a stable target rather the target itself moves between the training years and the year that follows. Every penalty is computed on the training window, so none of them can help with a problem that only exists outside it. That is the sense in which non-stationarity is the binding constraint on this problem at this data size.
+
+From all of this we can conclude, what the system converges to is reasonable rather than broken. With some structure that survives from one year to the next, the decision objective settles into a diversified, yet nearly static book: the learned arms sit beside 1/N on the walk-forward and tie it on the holdout (Table~\ref{tab:holdout}). And the coordinate it does condition on cannot rescue it in a crisis, because a direction detector reacts once prices have already fallen, which is why the learned arm rides 2008 down with the market (Section~\ref{sec:results-ladder}). 
+
+\section{Methodological lessons}
+\label{sec:disc-lessons}
+
+The transfer failures of Section~\ref{sec:results-capacity} have a common
+mechanism. A validation score is not a measurement of a configuration, rather it is the maximum of many noisy numbers. Early stopping keeps the best of hundreds of epochs, and a search keeps the best of many configurations, so the reported winner is selected twice over, and the maximum of a noisier sequence is larger. That is why more capacity manufactures more validation score and keeps less of it: the LSTM, the highest-capacity model in the study, shows the largest validation numbers and the largest collapse ($1.011$ to $0.237$ on test).
+
+Selection then fails in a specific way, out of sample, the spread across searched configurations ($0.064$) is smaller than the spread between two seeds of one configuration ($0.085$), meaning which configuration we pick matters less than which seed we draw, so the argmax of validation is essentially a draw from noise. On \texttt{sector11} it is worse, validation and test anti-correlate across capacities ($r=-0.477$, Figure~\ref{fig:capacity}), so selecting $K$ on validation would not merely have failed to help, it would have pointed away from the answer. The interaction found by the capacity curve compounds this, the best reservoir changes with $K$.
+
+Two smaller lessons are about sample size, a search scored at a single seed froze a winner at validation $0.817$ that scored $0.298$ when re-run across seeds; and a three-seed spread of $0.007$ became $0.088$ when one point was re-run at eight seeds, moving the point itself from $0.215$ to $0.276$. Meaning small samples do not merely add noise to a finding, they manufacture findings.
+
+What held up, in the end, was the base part of the protocol: pre-specified defaults, so every searched winner treated with doubt until re-scored on folds no selection had touched (Table~\ref{tab:transfer}), and one firewalled holdout. The holdout repaid it directly, the untuned defaults tied 1/N while the searched secondary came back worse and unstable ($0.930 \pm 0.583$ at a turnover of $14.6$). Had a searched winner gone forward as the primary instead, the one number in this study that no reader can argue with would have come back worse. On a problem that offers only a few hundred weekly decisions per fold, taking the untuned default and checking it on data no search has seen is not the weaker way of working; it is the only way whose final number means what it appears to mean. 
+
+
+% \chapter{Limitations and Threats to Validity}
+% \label{ch:limitations}
+
+Now I report the limitations of my project, none of these limitations, in my judgement, invalidates the conclusions, although several narrow their scope.
+
+\section{Evaluation design}
+\label{sec:lim-evaluation}
+
+The evaluation runs one walk-forward, which gives each arm a single backtest path. So the uncertainty I quote comes from resampling days and from changing seeds, not from the many other paths the same strategy might have taken. A combinatorial purged cross-validation would have produced a spread of such paths, and from that spread an estimate of how likely a chosen strategy is to be overfit. This is the main gap in our method, and Chapter~\ref{ch:conclusion} puts it first among the future work. Given how much of this study turned out to be about selection not transferring, a design built to measure that risk directly would have been the right tool for the job.
+
+Folds also overlap by design, the test year of one fold is the validation year of the next (Section~\ref{sec:evaluation}), so $7$ of $18$ \texttt{sector11} and $4$ of $10$ \texttt{etf10} test years had been seen during hyperparameter selection. No model ever trained on those years, but the search did look at them. Looking only at test years no search had touched, the learned arms gain between $+0.02$ and $+0.06$, while buy-and-hold SPY gains $+0.21$. 
+
+Annualising with $\sqrt{252}$ assumes days are independent. Our streams show a first-order autocorrelation of about $-0.10$, so the convention is mildly conservative here, and every test we run uses HAC standard errors, which assume nothing about independence. And a null result says we could not find an edge, not that there is none. With seed spreads of $0.02$ to $0.09$ and intervals straddling zero, anything smaller than about one seed spread would have gone unseen. What the evidence supports is that no edge shows up at this sample size, with the point estimates sitting at or below the baselines and the holdout agreeing.
+
+\section{Scope of the conclusions}
+\label{sec:lim-scope}
+
+Our study focuses on 2 US universes, the results are susceptible to being specific to this data set, this data size, training size, etc. 
+I tried to make logical statements and generalise wherever possible, but the result may not be the same in a decision-focused regime, gating at, say, daily decision frequency or much larger assets, where the number of decisions per parameter is different by orders of magnitude.
+
+The conclusions are also period-specific which is flagged in the results chapter. The \texttt{etf10} reading is dominated by a decade in which the index beat every diversified allocation. The \texttt{sector11} reading is shaped by 2008 sitting in its early folds. The holdout window had no such huge drop, every arm scored well (1/N reaches $1.34$ on \texttt{etf10}), the standard error of a Sharpe ratio estimated from $373$ trading days is close to one, and the run was scoped in advance to the frozen primary, one searched secondary and the four baselines, with no arm added after the results were seen.
+
+\section{Model choices}
+\label{sec:lim-model}
+
+The comparison again similar methodology is only done with one kind of trained encoder, i.e. LSTM. It reads a fixed window of recent days(to have it comparable to our reservoir) and then forgets it, a stronger recurrent baseline would carry its memory forward across the whole sample and train on that memory. The model search also tuned the remaining settings one at a time, this assumes that they do not interact much with network size. So ``a trained encoder does not beat the frozen reservoir here'' is established for windowed, memory less recurrent encoders trained in our loop, and not for more general models.
+
+Our interpretability analysis runs at $K=3$, because there are no regimes to examine unless there is more than one expert to route between and 3 are easy to classify and visualize. The frozen \texttt{sector11} configuration is $K=1$, where a softmax over a single option is always $1.0$ and the gate does nothing at all. The RQ1 findings therefore describe what the decision objective does when it is given regime capacity, they do not describe the frozen \texttt{sector11} arm, which has no regimes to interpret. In the same spirit, each statistical gate is limited, a single HMM fitted to two observables and a single VIX tercile rule, both held fixed rather than tuned. And $\eta^2$ only measures how much of a variable a labelling accounts for. It does not show that one causes the other. Finally the symmetry result of Chapter~\ref{ch:discussion} explains why the carving comes out as direction, but it also means the architecture itself limits which regimes a \emph{linear} gate can find, so this study cannot say what a nonlinear gate would have discovered. That question is left deliberately to Chapter~\ref{ch:conclusion}.
+

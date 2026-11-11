@@ -1,0 +1,54 @@
+% !TEX root =  ../Dissertation.tex
+
+\chapter{Introduction}
+\label{ch:introduction}
+
+Given a particular universe of assets, deciding the optimal way to split money across them is one of the oldest problems in quantitative finance, and it has an extremely large and ever-growing literature. This dissertation approaches it from a particular angle: instead of a large, complex model, I use a simple deterministic Simple Cycle reservoir, combined with the idea of training a portfolio model directly on the quality of the decisions it makes. On top of that, I ask about market regimes and try to identify them as they evolve, rather than using a specific statistical method. 
+
+
+
+\section{Motivation}
+\label{sec:motivation}
+
+The prevalent approach in a data driven portfolio construction from a top level view is a two stage pipeline: predict each assets future returns and hand those returns to an optimizer that changes the models weights/parameters. The central model is thus often trained to minimize the optimizer's prediction error, most often mean squared error with some other loss terms. This is convenient but it optimises a proxy rather than something of higher importance. Prediction accuracy and decision quality are different objectives, they can disagree at times, a model with lower MSE can still make worse allocation, mainly because MSE penalises every mistake in proportion to its size while actual allocation only cares on getting the relevant comparison right. Consider the case in \ref{tab:mse-vs-decision} with only 2 assets in our universe, and we have two model, the corresponding MSE are also noted. 
+
+\begin{table}[t]
+  \centering
+  \begin{tabular}{lccccc}
+    \hline
+             & Asset $A$ & Asset $B$ & MSE & buys & earns \\
+    \hline
+    Actual   & $4\%$ & $1\%$   & ---   & ---  & ---   \\
+    Model 1  & $2\%$ & $3\%$   & $4.0$ & $B$  & $1\%$ \\
+    Model 2  & $7\%$ & $-1\%$  & $6.5$ & $A$  & $4\%$ \\
+    \hline
+  \end{tabular}
+  \caption{A example of lower MSE leading to worse decision outcome.}
+  \label{tab:mse-vs-decision}
+\end{table}
+
+If the goal was to choose one asset, then choosing lower MSE leads us to Asset B, which will yield worse earnings. If the goal was to generate a full portfolio, the effect is reduced but not removed. The model will generally spread its weight in proportion to its predicted returns. Model 1 predicts $(A=2\%, B=3\%)$, so it puts about $40\%$ in $A$ and $60\%$ in $B$, earning $0.4(4\%) + 0.6(1\%) = 2.2\%$. Model 2 predicts $(A=7\%, B=-1\%)$, so it concentrates on $A$ and earns about $4\%$. The lower-MSE model still loses because it ranks $B$ above $A$, but the margin shrinks from $3\%$ in the single-asset case to about $1.8\%$ here. In conclusion, ranking errors hurt portfolio optimization, and MSE can create worse ranking orders. Thus, many models are imperfect \cite{elmachtoub2022smart}, which motivates me to train end-to-end on the decision itself, measuring success by risk-adjusted realized returns rather than any per-period forecast error \cite{sharpe1994sharpe}.
+
+The second idea is a long standing one that markets move through distinct \emph{regimes} \cite{hamilton1989new}, and that the allocation should adapt to which regime we current are in. The simplest picture is a bullish market vs a bearish one. Most work build these regimes concrete with a statistical rule. The two most common being hidden Markov models \cite{hamilton1989new} and thresholds on a volatility index such as the VIX. There is a vital issue to such regime generation, we assume that we know what a regime is and what shape it takes. If the structure that actually matters for a decision is something a Gaussian state model or a volatility bucket cannot express, imposing one of those forms in advance may hide it. A natural alternative is to let the decision objective discover the regimes for itself, so that the notion of a regime is defined by what helps the allocation rather than by a modeling assumption made beforehand.
+
+Finally, I wanted a model that's cheap to train and run, rather than a large, complex one, and to see how far I could take it. I also wanted my work to be reproducible, so I wanted it to be as deterministic as possible. I ended up choosing an echo state network, specifically a Simple Cycle Reservoir whose recurrent structure is fixed and deterministic \cite{rodan2011simple}. On top of the frozen encoder sits a mixture-of-experts allocator and a gating network that routes among them \cite{jacobs1991adaptive}. All of these are simple linear readouts, and only they are trained, in the reservoir we only tune its hyperparameters. 
+
+
+
+\section{Contribution}
+\label{sec:contribution}
+
+The contribution of this dissertation is the unique blend rather than any single ingredient. I build a portfolio optimization model in which trainable gates discover regimes on the states of a \emph{frozen} reservoir, a set of expert heads propose various portfolios, and the entire system is trained end-to-end on the excess Sharpe ratio of the realized return stream, accounting for transaction fees. Because the ledger that turns proposed portfolios into metrics, including Sharpe ratio, is differentiable, the decision objective backpropagates directly to the model, and no component forecasts returns. This leads to a research question: do regimes defined by the decision objective carve the market differently than regimes defined statistically?
+
+My answer has three central parts. First, the decision defined regimes do carve the market differently, and I was able to generate some idea of the underlying mechanism: the learned gate has a higher significance on recent market direction while the statistical gates focus more on volatility, so the two scheme read orthogonal axis and agree no more than by chance. Second this difference does not directly translate into performance. Across both universes with walk forward evaluation, no learned strategy significantly beats a naive baseline. Third, and of independent interest, I find that hyperparameter selection does not transfer on this problem: a configuration chosen on validation data can perform worse out of sample than the untuned default, which is why the frozen configuration I report is the default rather than a searched winner. A single, fire walled holdout, touched only once after the configuration was frozen, confirms the null on data the model had never seen.
+
+\section{Research questions}
+\label{sec:questions}
+
+The study is organised around three main questions.
+
+\textbf{RQ1}: Do regimes discovered by the decision objective carve the market differently from statistically defined regimes (a filtered hidden Markov model and VIX terciles)? If so, what does each scheme actually track?
+
+\textbf{RQ2}: Does this decision-defined regime gating \emph{pay}, that is, does it produce risk-adjusted performance that beats naive and mean-variance baselines out of sample.
+
+\textbf{RQ3}: Does adding capacity or information help, specifically a larger number of experts, a trained temporal encoder in place of the frozen reservoir, and market-level signals fed to the gate?

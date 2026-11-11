@@ -1,0 +1,54 @@
+# Rung 2 - the mixture of experts (phase P6, gate G2).
+#
+# The hinge of the method: K expert heads on the frozen state, blended by a
+# trainable softmax gate. The question this rung answers - do experts
+# specialise, or is the market's decision space effectively one regime? -
+# is a publishable finding in EITHER direction (Spec 8.7); the point of this
+# phase is to make the answer unambiguous and documented.
+
+arm_prefix: moe               # registry arm becomes "moe_k<K>"
+
+mixture:
+  # K - THE knob. One line to change; P10 ablates {2, 4}; K = 1 degenerates
+  # exactly to rung 1's single head. Every K produces a distinct cfg_hash.
+  n_experts: 3
+  # What the gate reads at rung 2: the reservoir state alone. The market
+  # signals (sentiment among them) enter the gate only at rung 3a - that
+  # ordering is what lets rung 3 attribute their value cleanly.
+  gating_input: state
+  gate_temperature: 1.0       # tau_g; searched 0.5-2 in the P8 outer search
+  gate_noise_initial: 0.3     # sigma_g at epoch 0, annealed linearly to 0
+                              # over the first half of max_epochs (R2)
+
+train:
+  learning_rate: 0.003
+  max_epochs: 500
+  patience: 25
+  gradient_clip_norm: 5.0
+
+loss:
+  # Table 3 default. The rung-1 grid showed no consistent cross-universe
+  # winner on F01 (etf10 mildly preferred 5.0, sector11 was flat within one
+  # seed-sd), so the default stands until the formal P8 config-freeze.
+  lambda_cvar: 1.0
+  # The anti-collapse pressure, and its escalation on starvation (Table 3's
+  # governance: raise to 0.05 if any expert's importance share drops below
+  # the aliveness threshold).
+  lambda_balance: 0.01
+  lambda_balance_escalated: 0.05
+
+# G2's aliveness line: every expert must hold at least this share of the
+# total gate mass, else the run is retrained at the escalated balance weight.
+starvation_threshold: 0.05
+
+# G2's specialisation line: experts count as differentiated when the largest
+# pairwise correlation between their weight schedules sits below this.
+specialisation_correlation_threshold: 0.9
+
+seeds: [0, 1, 2, 3, 4]
+folds: [F01]                  # the full fold matrix is P9's job
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  runs_dir: results/runs/rung2

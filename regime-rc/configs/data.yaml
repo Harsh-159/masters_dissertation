@@ -1,0 +1,81 @@
+# Data layer configuration - the single source of truth for what gets built.
+#
+# Adding an asset is a one-line change here; no code change is required.
+#
+# Two universes are core (the DJIA stretch universe is gated on data access and
+# is deliberately absent until that gate passes). Each universe distinguishes:
+#
+#   tickers          - the TRADEABLE universe: everything the portfolio may hold,
+#                      governed by the availability matrix A[t, i].
+#   reservoir_input  - the assets that DRIVE the reservoir. Restricted to assets
+#                      alive since the universe start, because feeding a
+#                      constant/NaN column for an asset that does not exist yet
+#                      would inject fabricated dynamics (locked decision R4).
+
+universes:
+
+  etf10:
+    description: "Baseline - 10 global ETFs. Common start Feb 2006 (DBC is the last inception)."
+    start: "2006-02-01"
+    tickers: [SPY, IWM, VGK, EEM, TLT, IEF, LQD, DBC, GLD, VNQ]
+    # All ten exist from the universe start, so the reservoir sees all of them.
+    reservoir_input: [SPY, IWM, VGK, EEM, TLT, IEF, LQD, DBC, GLD, VNQ]
+
+  sector11:
+    description: >
+      Regime-shift testbed - 11 SPDR sectors. The 9 originals start Dec 1998,
+      which is what makes 2008 genuinely out-of-sample for this universe.
+      XLRE (Oct 2015) and XLC (Jun 2018) are tradeable from their inception via
+      the availability matrix but never drive the reservoir.
+    start: "1999-01-01"
+    tickers: [XLE, XLF, XLK, XLV, XLY, XLP, XLI, XLB, XLU, XLRE, XLC]
+    reservoir_input: [XLE, XLF, XLK, XLV, XLY, XLP, XLI, XLB, XLU]
+
+# Fixed end date, never "today", so a rebuild reproduces the same dataset.
+# Covers the holdout window (2025-01 -> 2026-06).
+end: "2026-06-30"
+
+cash:
+  # The cash asset is appended to the ACCOUNTING panel only. It earns r_f and
+  # has zero variance, so an all-cash portfolio scores exactly excess-Sharpe 0
+  # (locked decision D5). It is excluded from the reservoir input and from every
+  # covariance estimate (causality test C3).
+  column: CASH
+
+fred:
+  # Pulled from the no-key CSV endpoint. See src/rrc/data/fred.py.
+  short_rate: DGS3MO      # constant-maturity yield; defines r_f (A4)
+  long_rate: DGS10        # for the term slope
+  volatility: VIXCLS
+  credit_spread: BAA10Y
+
+sentiment:
+  # San Francisco Fed Daily News Sentiment Index.
+  url: "https://www.frbsf.org/wp-content/uploads/news_sentiment_data.xlsx"
+  # The index is published with a delay and is itself built on trailing
+  # smoothing, so it is shifted by at least a full business week before use.
+  shift_business_days: 5
+
+signals:
+  # THE CAUSAL ORDER OF OPERATIONS, and it is not negotiable:
+  #   publication-lag shift FIRST, trailing z-score SECOND.
+  # Reversing them lets the z-statistics themselves see unshifted values,
+  # which is a leak that no later test would catch.
+  shift_days: 1           # macro/market series: use the value known yesterday
+  z_window: 252           # trailing standardisation window (one trading year)
+  z_min_periods: 126      # no z-score until half a window exists
+
+returns:
+  # Reservoir input is z-scored so that raw log returns (~ +/-0.01) do not drive
+  # tanh in its near-linear regime (E12).
+  reservoir_z_window: 252
+  reservoir_z_min_periods: 126
+
+clean:
+  # Forward-fill only, with a small limit, and only within an asset's active
+  # life. Never back-fill: that is look-ahead.
+  ffill_limit: 5
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed

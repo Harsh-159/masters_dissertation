@@ -1,0 +1,42 @@
+# Rung-0 baseline configuration.
+#
+# These parameters are FIXED, stated here once, and never searched: a baseline
+# with a tuned hyperparameter is not a baseline. Any change to this file changes
+# each baseline's cfg_hash, so a re-run under different settings appears in the
+# registry as a distinct configuration rather than silently overwriting history.
+
+arms:
+  one_over_n:
+    description: "Equal weight over the risky assets active on the signal day; weekly."
+
+  buy_hold_spy:
+    description: "One trade into SPY at the segment start, then hold. The market line."
+    ticker: SPY
+
+  inverse_vol:
+    description: "Weights proportional to 1/trailing-volatility; weekly. Equal risk, not equal money."
+    window: 63            # one quarter of trading days
+    min_observations: 40  # an asset needs this much history in the window to qualify
+
+  mean_variance:
+    description: "Rolling Ledoit-Wolf mean-variance, monthly refit. Simple adaptivity."
+    lookback: 252         # one year of trading days for mu and Sigma
+    min_observations: 126 # half the window before an asset becomes eligible
+    risk_aversion: 5.0    # fixed gamma; a baseline gets no hyperparameter search
+    refit: monthly
+
+evaluation:
+  # Every baseline pays the identical cost function (A9): 5 bp per unit of
+  # notional traded, through the same ledger as every model.
+  cost_per_unit: 0.0005
+  # Stationary-bootstrap parameters for the confidence intervals (Section 13).
+  bootstrap:
+    n_resamples: 2000
+    mean_block_length: 21
+    level: 0.95
+    seed: 0
+
+paths:
+  processed_dir: data/processed
+  runs_dir: results/runs/rung0
+  figures_dir: results/figures

@@ -1,0 +1,15 @@
+NRSM-MIA
+
+$\text{SR} = \sqrt{252} \cdot \frac{\mu_{\text{strategy}}}{\sigma_{\text{strategy}}}$. It uses daily long/short strategy returns and annualises with $\sqrt{252}$. No risk-free-rate subtraction is stated.
+
+RegimeFolio
+
+Uses the maximum-Sharpe objective $\frac{w_t^\top \mu_{k_t}^{\text{ex}}}{\sqrt{w_t^\top \Sigma_{k_t} w_t}}$, where $\mu^{\text{ex}}$ is expected excess return and $\Sigma$ is the covariance matrix. The three-month Treasury-bill rate is the risk-free benchmark. The paper does not explicitly state how the reported Sharpe is annualised.
+
+A Machine Learning Approach to Risk-Based Asset Allocation
+
+$\text{SR} = \sqrt{252} \cdot \frac{\mu_{\text{daily}}}{\sigma_{\text{daily}}}$. Returns are first calculated in excess of the contemporaneous risk-free rate. The paper also reports Newey–West standard errors to account for autocorrelation when assessing significance.
+
+TradExpert
+
+First calculates geometric annualised return: $\text{AR} = \left[ \prod_{i=1}^N (1 + r_i) \right]^{252/N} - 1$. Then $\text{SR} = \frac{\text{AR} - R_f}{\sigma_{\text{annual}}}$, with $R_f = 0$ and $\sigma_{\text{annual}} = \sigma_{\text{daily}} \cdot \sqrt{252}$.

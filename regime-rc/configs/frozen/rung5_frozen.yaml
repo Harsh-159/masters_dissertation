@@ -1,0 +1,65 @@
+# FROZEN CONFIGURATION - rung 5 (execution layer)
+#
+# WHY THIS FILE WAS REWRITTEN
+# ---------------------------
+# The previous contents were entirely NSGA-II front configuration - `pop_size`,
+# `n_generations`, `gamma_levels`, `selection_cost`, `anchor_strength`,
+# `return_annualisation` - for `src/rrc/optim/nsga_front.py`, a module that was
+# DELETED in the P8 session along with the `pymoo` dependency. It also carried
+# `lambda_cvar: 1.0` and `lambda_turn: 0.5`, both of which were subsequently
+# measured and select to zero.
+#
+# A frozen config pointing at a deleted module is worse than no frozen config:
+# it would silently reintroduce a retired method into the results freeze.
+#
+# WHAT RUNG 5 ACTUALLY IS NOW
+# ---------------------------
+# Exact cardinality on the trained blend. Each rebalance date, keep the K_card
+# names the trained mixture likes most, renormalise, run the same ledger and the
+# same 5 bp cost. No retraining, no optimiser, no front.
+#
+# The front was not simplified away - it was built in full, measured, and
+# retired on evidence. On identical folds, one trained model, one segment:
+#
+#     schedule                        etf10     sector11
+#     A  mixture blend                +0.856    +0.332
+#     B  blend + cardinality only     +0.909    +0.342
+#     C  NSGA front                   -0.325    -0.231
+#
+# The front re-picks assets from an EWMA momentum estimate, discarding the
+# trained system's own view - a predict-then-optimise step bolted onto the end
+# of a decision-focused system, which is precisely the pattern this thesis
+# argues against. It costs what the thesis predicts it should. That is a result;
+# it belongs in the write-up, not in a config file.
+# Regenerate with: scripts/run_front_attribution.py
+
+arm: cardinality
+
+# WHAT CARDINALITY COSTS, measured properly (12 folds, 5 seeds, concatenated,
+# at K = 1). The price is monotone in tightness:
+#
+#     K_card         3       5       7       9    unconstrained
+#     Sharpe     0.546   0.588   0.637   0.663    0.670
+#
+# Unconstrained is best, so that is what is frozen for the headline result.
+# K_card = 5 is retained as the REPORTED realistic-execution variant: rung 5
+# exists to quantify the price of a tradeable book, and 0.08 Sharpe is that
+# price. Both are run at P9; only the first is the headline.
+k_card: 0                    # 0 = unconstrained (the frozen headline)
+k_card_reported: 5           # the realistic-execution comparison
+
+# Carried from the frozen model configuration. All regularisers select to zero
+# on the concatenated metric - see configs/frozen/sector11.yaml for the
+# per-term evidence. lambda_turn in particular is a LOSS penalty and is
+# distinct from the 5 bp transaction cost, which the ledger always charges and
+# which is never switched off.
+loss:
+  lambda_cvar: 0.0
+  lambda_balance: 0.0
+  lambda_turn: 0.0
+  lambda_div: 0.0
+
+source: results/runs/rung5/ (K_card sweep, 12 folds x 5 seeds, concatenated)
+status: >
+  validation-selected, not yet verified on held-out folds F13-F18.
+  Do not tag config-freeze until that check has run.

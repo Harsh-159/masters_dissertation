@@ -1,0 +1,105 @@
+run:
+  start: "2007-01-01"          
+  end:   "2025-12-31"          
+# random_seed: 42
+
+cache:
+  raw_dir:       "data/raw"
+  processed_dir: "data/processed"
+  reports_dir:   "reports"
+  plots_dir:     "plots"
+  logs_dir:      "logs"
+
+fetch:
+  auto_adjust_fallback: true   # for enabling auto adjust in the yahoo api
+  retry_attempts: 3
+  retry_backoff_seconds: 2.0   # how much to wait between each retry, doubles so 2 then 4 then 6
+  polite_delay_seconds: 0.5    # pause between each ticker download to avoid hitting api limit
+
+clean:
+  ffill_limit: 5               # bridge minor holidays/halts, importantly its always forward fill never backward fill
+  min_history_days: 252        # warn if an asset has fewer usable observations
+
+# validate:
+#   outlier_sigma: 6.0           # |z-score of log return| beyond this -> flag
+#   extreme_return_abs: 0.40     # |daily log return| > 40% -> flag for manual review
+#   stale_run_length: 5          # >= N identical consecutive prices -> flag
+
+stats:
+  risk_free_rate: 4.0          # annualised risk-free rate for Sharpe
+  trading_days_per_year: 252
+
+plots:
+  dpi: 300
+  palette: "colorblind"
+  vector_formats: ["pdf", "svg"]   # emitted for the 3 primary ETF figures; PNG always
+
+universes:
+
+  etf:
+    description: "Baseline - 10 global ETFs, diversified low-correlation testbed"
+    tickers: [SPY, IWM, VGK, EEM, TLT, IEF, LQD, DBC, GLD, VNQ]
+
+  sector:
+    description: "Regime-shift - 11 SPDR sector ETFs (XLRE 2015, XLC 2018 inceptions)"
+    tickers: [XLE, XLF, XLK, XLV, XLY, XLP, XLI, XLB, XLU, XLRE, XLC]
+
+  dow:
+    description: >
+      Cardinality / survivorship-free - every DJIA constituent at any point in
+      2007-2025. member_to: null = still a member.
+      
+    # Each entry: {ticker, member_from, member_to}.  member_to: null = current member.
+    schedule:
+      # --- members at window start (2007-01-01) ---
+      - {ticker: MMM,  member_from: "2007-01-01", member_to: null}
+      - {ticker: AA,   member_from: "2007-01-01", member_to: "2013-09-20"}   # Alcoa -> out
+      - {ticker: MO,   member_from: "2007-01-01", member_to: "2008-02-19"}   # Altria -> out
+      - {ticker: AXP,  member_from: "2007-01-01", member_to: null}
+      - {ticker: AIG,  member_from: "2007-01-01", member_to: "2008-09-22"}   # reverse-split later
+      - {ticker: T,    member_from: "2007-01-01", member_to: "2015-03-19"}   # AT&T -> out
+      - {ticker: BA,   member_from: "2007-01-01", member_to: null}
+      - {ticker: CAT,  member_from: "2007-01-01", member_to: null}
+      - {ticker: C,    member_from: "2007-01-01", member_to: "2009-06-08"}   # Citi; 1:10 rsplit 2011
+      - {ticker: KO,   member_from: "2007-01-01", member_to: null}
+      - {ticker: DIS,  member_from: "2007-01-01", member_to: null}
+      - {ticker: DD,   member_from: "2007-01-01", member_to: "2017-09-01"}   # DuPont -> DowDuPont
+      - {ticker: XOM,  member_from: "2007-01-01", member_to: "2020-08-31"}
+      - {ticker: GE,   member_from: "2007-01-01", member_to: "2018-06-26"}
+      - {ticker: GM,   member_from: "2007-01-01", member_to: "2009-06-08"}   # OLD GM; bankrupt 2009 - pre-2010 data likely UNRETRIEVABLE
+      - {ticker: HPQ,  member_from: "2007-01-01", member_to: "2013-09-20"}
+      - {ticker: HD,   member_from: "2007-01-01", member_to: null}
+      - {ticker: HON,  member_from: "2007-01-01", member_to: "2008-02-19"}   # out, then RE-ADDED below
+      - {ticker: INTC, member_from: "2007-01-01", member_to: "2024-11-08"}
+      - {ticker: IBM,  member_from: "2007-01-01", member_to: null}
+      - {ticker: JNJ,  member_from: "2007-01-01", member_to: null}
+      - {ticker: JPM,  member_from: "2007-01-01", member_to: null}
+      - {ticker: MCD,  member_from: "2007-01-01", member_to: null}
+      - {ticker: MRK,  member_from: "2007-01-01", member_to: null}
+      - {ticker: MSFT, member_from: "2007-01-01", member_to: null}
+      - {ticker: PFE,  member_from: "2007-01-01", member_to: "2020-08-31"}
+      - {ticker: PG,   member_from: "2007-01-01", member_to: null}
+      - {ticker: UTX,  member_from: "2007-01-01", member_to: "2020-04-03"}   # -> renamed RTX; UTX likely UNRETRIEVABLE
+      - {ticker: VZ,   member_from: "2007-01-01", member_to: null}
+      - {ticker: WMT,  member_from: "2007-01-01", member_to: null}
+      # --- added during the window ---
+      - {ticker: BAC,  member_from: "2008-02-19", member_to: "2013-09-20"}
+      - {ticker: CVX,  member_from: "2008-02-19", member_to: null}
+      - {ticker: KFT,  member_from: "2008-09-22", member_to: "2012-09-24"}   # Kraft Foods; split/delisted 2012 - likely UNRETRIEVABLE
+      - {ticker: CSCO, member_from: "2009-06-08", member_to: null}
+      - {ticker: TRV,  member_from: "2009-06-08", member_to: null}
+      - {ticker: UNH,  member_from: "2012-09-24", member_to: null}
+      - {ticker: GS,   member_from: "2013-09-20", member_to: null}
+      - {ticker: NKE,  member_from: "2013-09-20", member_to: null}
+      - {ticker: V,    member_from: "2013-09-20", member_to: null}
+      - {ticker: AAPL, member_from: "2015-03-19", member_to: null}
+      - {ticker: WBA,  member_from: "2018-06-26", member_to: "2024-02-26"}
+      - {ticker: DWDP, member_from: "2017-09-01", member_to: "2019-04-02"}   # DowDuPont; data may be partial
+      - {ticker: DOW,  member_from: "2019-04-02", member_to: "2024-11-08"}   # Dow Inc (spun off)
+      - {ticker: RTX,  member_from: "2020-04-03", member_to: "2020-08-31"}   # ex-UTX, post-Raytheon merger
+      - {ticker: CRM,  member_from: "2020-08-31", member_to: null}
+      - {ticker: AMGN, member_from: "2020-08-31", member_to: null}
+      - {ticker: HON,  member_from: "2020-08-31", member_to: null}           # Honeywell RE-ADDED
+      - {ticker: AMZN, member_from: "2024-02-26", member_to: null}
+      - {ticker: NVDA, member_from: "2024-11-08", member_to: null}
+      - {ticker: SHW,  member_from: "2024-11-08", member_to: null}

@@ -1,0 +1,40 @@
+# ============================================================
+# XGBoost baseline forecaster - configuration.
+#
+# Consumes the data contract produced by ../portfolio-data:
+#   <processed_dir>/<universe>_returns.parquet
+# One model per asset predicts that asset's NEXT-day log return from
+# features built only from PAST data. Split is chronological (no shuffle).
+# ============================================================
+
+data:
+  processed_dir: "../portfolio-data/data/processed"   # resolved relative to this file
+  universes: [etf, sector, dow]
+
+features:
+  return_lags: 10              # ret_lag1..ret_lag10 (lag1 = today's return r_t)
+  roll_windows: [5, 10, 21]    # rolling mean & std windows (end at t)
+  momentum_windows: [21, 63]   # cumulative-return (momentum) windows
+
+split:
+  train_fraction: 0.75         # first 75% of each asset's samples train, last 25% test
+  min_train: 250               # skip assets with fewer than this many train rows
+  min_test: 60                 # skip assets with fewer than this many test rows
+
+model:                         # simple, fixed XGBoost baseline (no tuning)
+  n_estimators: 400
+  max_depth: 4
+  learning_rate: 0.03
+  subsample: 0.8
+  colsample_bytree: 0.8
+  reg_lambda: 1.0
+  min_child_weight: 5
+  random_state: 42
+
+eval:
+  trading_days_per_year: 252
+  risk_free_rate: 4.0          # annualised rf for Sharpe
+
+output:
+  reports_dir: "reports"
+  plots_dir: "plots"

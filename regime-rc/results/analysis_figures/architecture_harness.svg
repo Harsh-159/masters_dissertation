@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 826" width="1600" height="826">
+<style>
+  .bg    { fill:#FFFFFF; }
+  .box   { fill:none; stroke:#999999; stroke-width:1; }
+  .boxt  { font:600 15px Helvetica,Arial,sans-serif; fill:#111111; }
+  .n     { stroke:#444444; stroke-width:1; fill:#F7F7F7; }
+  .src   { stroke:#555555; stroke-width:1; fill:#FFFFFF; }
+  .key   { stroke:#111111; stroke-width:1.5; fill:#FFFFFF; }
+  .frz   { stroke:#555555; stroke-width:1; fill:#EFEFEF; stroke-dasharray:5 3; }
+  .mdl   { stroke:#111111; stroke-width:2; fill:#E4E4E4; }
+  .ev    { stroke:#444444; stroke-width:1; fill:#FFFFFF; }
+  .t     { font:600 13px Helvetica,Arial,sans-serif; fill:#111111; text-anchor:middle; }
+  .s     { font:400 10px Helvetica,Arial,sans-serif; fill:#333333; text-anchor:middle; }
+  .e     { fill:none; stroke:#444444; stroke-width:1.2; marker-end:url(#a); }
+  .ed    { fill:none; stroke:#444444; stroke-width:1.2; stroke-dasharray:5 4; marker-end:url(#a); }
+  .l     { font:400 10.5px Helvetica,Arial,sans-serif; fill:#222222; }
+  .lbg   { fill:#FFFFFF; stroke:none; }
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#444444"/>
+  </marker>
+</defs>
+
+<rect class="bg" x="0" y="0" width="1600" height="826"/>
+
+<!-- ═══════════ CONTAINERS ═══════════ -->
+<rect class="box" x="20"   y="40"  width="520" height="740" rx="4"/>
+<text class="boxt" x="36"  y="66">Data Preparation</text>
+<rect class="box" x="700"  y="300" width="300" height="400" rx="4"/>
+<text class="boxt" x="716" y="326">Models</text>
+<rect class="box" x="1160" y="40"  width="420" height="740" rx="4"/>
+<text class="boxt" x="1176" y="66">Portfolio Evaluation</text>
+
+<!-- ═══════════ DATA — sources ═══════════ -->
+<rect class="src" x="42" y="288" width="130" height="56" rx="3"/>
+<text class="t" x="107" y="311">Market Prices</text><text class="s" x="107" y="328">Yahoo Finance</text>
+<rect class="src" x="42" y="360" width="130" height="56" rx="3"/>
+<text class="t" x="107" y="379">FRED</text>
+<text class="s" x="107" y="394">VIXCLS · DGS3MO</text>
+<text class="s" x="107" y="407">DGS10 · BAA10Y</text>
+<rect class="src" x="42" y="432" width="130" height="56" rx="3"/>
+<text class="t" x="107" y="455">News Sentiment</text><text class="s" x="107" y="472">SF Fed</text>
+
+<!-- prep -->
+<rect class="n" x="200" y="340" width="150" height="96" rx="3"/>
+<text class="t" x="275" y="369">Preprocessing</text>
+<text class="t" x="275" y="385">&amp; Holdout</text>
+<text class="s" x="275" y="403">trading calendar · mask</text>
+<text class="s" x="275" y="416">forward-fill ≤ 5d</text>
+<text class="s" x="275" y="429">2025–26 removed</text>
+
+<!-- outputs -->
+<rect class="key" x="380" y="160" width="148" height="60" rx="3"/>
+<text class="t" x="454" y="184">Log Returns</text><text class="s" x="454" y="202">D × N · risky only</text>
+<rect class="key" x="380" y="250" width="148" height="60" rx="3"/>
+<text class="t" x="454" y="274">Risk-Free Rate</text><text class="s" x="454" y="292">D × 1 · daily</text>
+<rect class="key" x="380" y="340" width="148" height="60" rx="3"/>
+<text class="t" x="454" y="364">Simple Returns</text><text class="s" x="454" y="382">D × N+1 · risky + cash</text>
+<rect class="key" x="380" y="430" width="148" height="60" rx="3"/>
+<text class="t" x="454" y="454">Signals</text><text class="s" x="454" y="472">d = 5 · lagged, z-scored</text>
+<rect class="key" x="380" y="520" width="148" height="60" rx="3"/>
+<text class="t" x="454" y="544">Execution Days</text><text class="s" x="454" y="562">J · weekly, lagged</text>
+
+<!-- ═══════════ MODELS ═══════════ -->
+<rect class="frz" x="718" y="350" width="264" height="120" rx="3"/>
+<text class="t" x="850" y="376">Frozen Reservoir Encoder</text>
+<text class="s" x="850" y="396">xₜ = (1−α)xₜ₋₁ + α tanh(Wᵢₙuₜ + Wxₜ₋₁ + b)</text>
+<text class="s" x="850" y="416">ring topology · ρ exact by construction</text>
+<text class="s" x="850" y="436">drawn once, never trained</text>
+<text class="s" x="850" y="456">cached states · J × Nᵣ = 300</text>
+
+<rect class="mdl" x="718" y="500" width="264" height="60" rx="3"/>
+<text class="t" x="850" y="524">Proposed Portfolio Model</text>
+<text class="s" x="850" y="542">experts + learned gate</text>
+
+<rect class="ev" x="718" y="600" width="264" height="72" rx="3"/>
+<text class="t" x="850" y="624">Benchmark Strategies</text>
+<text class="s" x="850" y="642">1/N · buy-and-hold SPY</text>
+<text class="s" x="850" y="658">inverse-vol · Ledoit-Wolf MV</text>
+
+<!-- ═══════════ EVALUATION ═══════════ -->
+<rect class="ev" x="1185" y="250" width="155" height="60" rx="3"/>
+<text class="t" x="1262" y="274">Execution</text><text class="s" x="1262" y="292">on scheduled days</text>
+<rect class="ev" x="1185" y="350" width="155" height="60" rx="3"/>
+<text class="t" x="1262" y="374">Differentiable Ledger</text><text class="s" x="1262" y="392">cost = 5bp × Σ|Δw|</text>
+<rect class="key" x="1185" y="450" width="155" height="60" rx="3"/>
+<text class="t" x="1262" y="474">Net Returns</text><text class="s" x="1262" y="492">D × 1</text>
+<rect class="ev" x="1390" y="370" width="180" height="66" rx="3"/>
+<text class="t" x="1480" y="394">Performance Metrics</text>
+<text class="s" x="1480" y="412">Sharpe · turnover</text><text class="s" x="1480" y="426">max drawdown</text>
+<rect class="ev" x="1390" y="530" width="180" height="66" rx="3"/>
+<text class="t" x="1480" y="558">Training Objective</text>
+<text class="s" x="1480" y="578">− excess Sharpe</text>
+
+<!-- ═══════════ EDGES ═══════════ -->
+<path class="e" d="M172,316 H186 V388 H198"/>
+<path class="e" d="M172,388 H198"/>
+<path class="e" d="M172,460 H186 V388 H198"/>
+
+<path class="e" d="M350,388 H365 V190 H378"/>
+<path class="e" d="M350,388 H365 V280 H378"/>
+<path class="e" d="M350,388 H365 V370 H378"/>
+<path class="e" d="M350,388 H365 V460 H378"/>
+<path class="e" d="M350,388 H365 V550 H378"/>
+
+<path class="e" d="M454,310 V338"/>
+<text class="l" x="462" y="329">cash column</text>
+
+<path class="e"  d="M528,190 H620 V410 H716"/>
+<text class="l" x="628" y="252">rolling z-score</text>
+<text class="l" x="628" y="266">no cash</text>
+
+<path class="ed" d="M528,460 H635 V515 H716"/>
+<text class="l" x="546" y="452">model dependent</text>
+
+<path class="e"  d="M528,370 H560 V150 H1105 V380 H1183"/>
+<text class="l" x="700" y="144">simple returns</text>
+
+<path class="e"  d="M528,280 H592 V105 H1055 V548 H1388"/>
+<text class="l" x="700" y="99">risk-free rate</text>
+
+<path class="e"  d="M528,550 H620 V740 H1080 V280 H1183"/>
+<text class="l" x="700" y="734">execution dates</text>
+
+<path class="e" d="M850,470 V498"/>
+
+<path class="e"  d="M982,530 H1015 V268 H1183"/>
+<rect class="lbg" x="1004" y="407" width="94" height="15"/>
+<text class="l" x="1008" y="418">portfolio weights</text>
+<rect class="lbg" x="1004" y="421" width="48" height="15"/>
+<text class="l" x="1008" y="432">J × N+1</text>
+
+<path class="e"  d="M982,636 H1035 V292 H1183"/>
+
+<path class="e" d="M1262,310 V348"/>
+<path class="e" d="M1262,410 V448"/>
+
+<path class="e"  d="M1340,470 H1365 V403 H1388"/>
+<path class="ed" d="M1340,492 H1368 V578 H1388"/>
+<text class="l" x="1188" y="533">trained arms only</text>
+
+<path class="ed" d="M1480,596 V800 H600 V545 H716"/>
+<text class="l" x="1000" y="794">gradient</text>
+</svg>

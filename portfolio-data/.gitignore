@@ -1,0 +1,15 @@
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Raw per-ticker cache (large; regenerated from yfinance on demand).
+# The processed panels, reports, and plots are the deliverables - keep them.
+data/raw/
+
+# Logs
+logs/*.log
+logs/*.log.*

@@ -1,0 +1,55 @@
+# Outer reservoir-hyperparameter search - random search (the R1 fallback).
+#
+# ~50 random configurations, each scored by training the mixture on a small fold
+# subset and reading validation Sharpe and CVaR. The non-dominated set is
+# reported; one config is frozen by the documented rule (max validation Sharpe on
+# the front). Every configuration counts as a deflated-Sharpe trial, so the
+# search is deliberately lean.
+
+search:
+  method: random            # random search, not NSGA-II, for the OUTER loop
+  n_random: 50              # number of configurations to draw
+  search_seed: 0            # seeds the random draw of configurations
+  # Head-initialisation seeds each config is scored over. The first pass used
+  # ONE seed and froze the maximum; that winner (val Sharpe 0.817) collapsed
+  # to 0.298 under five seeds - the whole advantage was one seed on one fold.
+  # Multi-seed scoring costs proportionally more and is the price of a
+  # selection that survives.
+  eval_seeds: [0, 1]
+
+# The searched space (Appendix B). n_reservoir is drawn as an integer; the rest
+# are continuous, uniform over [low, high].
+ranges:
+  spectral_radius: [0.5, 0.999]
+  leak_rate: [0.05, 1.0]
+  target_pre_activation_std: [0.3, 1.5]
+  gate_temperature: [0.5, 2.0]
+  n_reservoir: [100, 500]
+
+# Held fixed across all candidates (not searched).
+fixed:
+  washout: 250
+  bias_scale: 0.0
+  calibration_fraction: 0.6
+  max_iterations: 10
+  tolerance: 0.02
+
+# How each candidate is trained for its fitness. Fewer epochs than a final run:
+# this is a ranking signal, not a result of record. lambda_turn is ON so the
+# search prefers configs that train well UNDER turnover pressure; set 0.0 to
+# search turnover-agnostic instead.
+evaluation:
+  fold_names: [F01, F02, F03, F04, F05]
+  n_experts: 3
+  lambda_cvar: 0.0          # measured best on sector11 validation
+  lambda_balance: 0.01
+  lambda_turn: 0.0          # measured best on sector11 validation
+  lambda_div: 0.01          # G2's escalation for near-identical experts
+  max_epochs: 200
+  patience: 15
+
+paths:
+  processed_dir: data/processed
+  states_dir: data/states
+  runs_dir: results/runs/hyper
+  frozen_dir: configs/frozen
