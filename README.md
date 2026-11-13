@@ -129,4 +129,3 @@ removed from every file at load time, with a check that raises an error if any
 run tries to cross that line. It was evaluated one time, at the very end, after
 the configuration had been fixed — so nothing about the model could have been
 chosen with knowledge of it.
-# masters_dissertation
